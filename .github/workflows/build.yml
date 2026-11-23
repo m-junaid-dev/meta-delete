@@ -26,22 +26,42 @@ jobs:
         with:
           gradle-version: 8.7
 
-      - name: Keystore decode
+      - name: Keystore decode and verify
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "KEYSTORE_BASE64 secret nahi mila."
+          for v in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!v}" ]; then
+              echo "::error::Secret $v khali ya missing hai. Settings > Secrets and variables > Actions mein banao."
+              exit 1
+            fi
+          done
+          # space, line break aur quotes saaf karo
+          clean() { printf '%s' "$1" | tr -d ' \r\n\t"'; }
+          B64=$(clean "$KEYSTORE_BASE64")
+          PW=$(clean "$KEYSTORE_PASSWORD")
+          ALIAS=$(clean "$KEY_ALIAS")
+          if ! printf '%s' "$B64" | base64 -d > "$RUNNER_TEMP/wasaver.jks" 2>/dev/null; then
+            echo "::error::KEYSTORE_BASE64 ki value kharab hai (base64 decode nahi hui). github-secrets.txt ki lambi line poori copy karo."
             exit 1
           fi
-          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/wasaver.jks"
+          if ! keytool -list -keystore "$RUNNER_TEMP/wasaver.jks" -storepass "$PW" -alias "$ALIAS" >/dev/null 2>&1; then
+            echo "::error::Keystore nahi khuli. KEYSTORE_PASSWORD ya KEY_ALIAS galat hai, ya KEYSTORE_BASE64 adhoori copy hui hai."
+            exit 1
+          fi
+          echo "Keystore OK"
+          echo "CLEAN_PW=$PW" >> "$GITHUB_ENV"
+          echo "CLEAN_ALIAS=$ALIAS" >> "$GITHUB_ENV"
 
       - name: Signed release APK build
         env:
           KEYSTORE_PATH: ${{ runner.temp }}/wasaver.jks
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_PASSWORD: ${{ env.CLEAN_PW }}
+          KEY_ALIAS: ${{ env.CLEAN_ALIAS }}
+          KEY_PASSWORD: ${{ env.CLEAN_PW }}
         run: gradle assembleRelease --no-daemon --stacktrace
 
       - name: APK rename
