@@ -15,17 +15,16 @@ sender ke delete karne se pehle apne paas save kar leti hai.
 - Sirf Android. iPhone par possible nahi.
 - Battery optimization mein is app ko "Unrestricted" karo, warna Android service band kar deta hai.
 
-## APK GitHub Actions se banana
-1. GitHub par naya repo banao aur is poore folder ki files upload/push karo (branch `main`).
-2. Repo ka **Actions** tab kholo. Build khud shuru hogi (ya "Build APK" > "Run workflow").
-3. Build green hone par run kholo, neeche **Artifacts** se `wa-saver-debug-apk` download karo.
-4. Zip kholo, `app-debug.apk` phone par install karo (Unknown sources allow karna hoga).
+## APK GitHub Actions se banana (signed)
+1. Repo > Settings > Secrets and variables > Actions mein 4 secrets banao: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`.
+2. Files push/upload karo. Actions tab mein "Build APK" chalega.
+3. Build ke baad APK **Releases** mein aa jati hai. Seedha download link:
+   `https://github.com/<user>/<repo>/releases/latest/download/WASaver.apk`
 
 ## Phone par setup
-1. App kholo, **Notification access do** > WA Saver ON karo.
-2. **All files access do** > WA Saver ON karo.
-3. **Saving start karo**.
-4. Battery settings mein WA Saver ko Unrestricted karo.
+1. Chrome se link kholo, APK download karke install karo.
+2. App kholo, **Notification access** aur **All files access** do.
+3. **Start** dabao. Battery settings mein WA Saver ko Unrestricted karo.
 
 ## Next steps
 Cloud sync (backend + S3), web dashboard, files ko app ke andar open karna, search, login/payments.
